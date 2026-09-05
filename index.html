@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>De Montevideo a Sevilla con cariño</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; z-index: 1; }
+    .ui-overlay { position: relative; z-index: 10; pointer-events: none; }
+    .pointer-events-auto { pointer-events: auto; }
+    
+    /* Pin circular rojo para los iconos del mapa */
+    .map-pin {
+      width: 42px;
+      height: 42px;
+      background-color: #ef4444;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    /* Transición para colapsar/desplegar */
+    .sheet-transition {
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ANIMACIÓN DEL REGALO Y CORAZONES */
+    .gift-animation-container {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gift-box-base {
+      font-size: 42px;
+      position: absolute;
+      bottom: 0px;
+      z-index: 2;
+      line-height: 1;
+    }
+
+    .heart-float {
+      position: absolute;
+      font-size: 18px;
+      opacity: 0;
+      z-index: 1;
+      animation: dropHeart 2.5s infinite ease-in-out;
+    }
+
+    .heart-1 {
+      left: 14px;
+      animation-delay: 0s;
+    }
+
+    .heart-2 {
+      right: 14px;
+      animation-delay: 0.8s;
+    }
+
+    @keyframes dropHeart {
+      0% {
+        transform: translateY(-26px) scale(0.5);
+        opacity: 0;
+      }
+      30% {
+        opacity: 1;
+        transform: translateY(-12px) scale(1.1);
+      }
+      70% {
+        opacity: 1;
+        transform: translateY(10px) scale(0.8);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(18px) scale(0.3);
+      }
+    }
+
+    .gift-lid-animated {
+      display: inline-block;
+      animation: openCloseLid 2.5s infinite ease-in-out;
+      transform-origin: bottom center;
+    }
+
+    @keyframes openCloseLid {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      30%, 70% {
+        transform: translateY(-8px) rotate(-14deg);
+      }
+    }
+
+    /* ANIMACIÓN PARA LA LÍNEA DEL MAPA */
+    @keyframes flowLine {
+      from {
+        stroke-dashoffset: 40;
+      }
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .animated-route-line {
+      stroke-dasharray: 10, 10;
+      animation: flowLine 1.5s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased overflow-hidden">
+
+  <!-- MAPA DE FONDO -->
+  <div id="map"></div>
+
+  <!-- NOTIFICACIÓN TOAST (COPIADO AL PORTAPAPELES) -->
+  <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center space-x-2">
+    <span>📋</span>
+    <span>¡Enlace copiado al portapapeles!</span>
+  </div>
+
+  <!-- INTERFAZ FLOTANTE -->
+  <div id="main-interface" class="ui-overlay h-screen flex flex-col justify-between p-3 max-w-md mx-auto transition-opacity duration-300">
+    
+    <!-- BLOQUE SUPERIOR (HEADER) -->
+    <div class="space-y-3 pointer-events-auto">
+      
+      <!-- BOTONES SUPERIORES -->
+      <div class="flex justify-between items-center px-1">
+        <!-- BOTÓN CERRAR VENTANA -->
+        <button onclick="closeWindow()" title="Cerrar" class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all">
+          ✕
+        </button>
+        <div class="flex space-x-2">
+          <!-- BOTÓN COMPARTIR -->
+          <button onclick="copyLink()" title="Compartir enlace" class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:bg-gray-50 active:scale-95 transition-all">
+            <svg class="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+          </button>
+          <button class="bg-white px-4 py-2 rounded-full shadow-md font-semibold text-xs text-gray-700 flex items-center space-x-1 hover:bg-gray-50 transition-all">
+            <span>🎧 Ayuda</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CARD PRINCIPAL DE ESTADO DE ENTREGA -->
+      <div class="bg-white rounded-2xl shadow-xl p-4 border border-gray-100">
+        <div class="flex justify-between items-start text-xs">
+          <div>
+            <span class="text-emerald-600 font-bold flex items-center space-x-1">
+              <span>• A tiempo</span>
+            </span>
+            <!-- FECHA DE LLEGADA -->
+            <div class="mt-0.5">
+              <span class="text-[10px] text-gray-400 font-semibold block uppercase tracking-wider">Llegada</span>
+              <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight -mt-0.5">01 de diciembre</h1>
+            </div>
+          </div>
+          
+          <!-- ANIMACIÓN DE CAJA DE REGALO CON CORAZONES -->
+          <div class="gift-animation-container -mr-1 -mt-1">
+            <span class="heart-float heart-1">❤️</span>
+            <span class="heart-float heart-2">💖</span>
+            <span class="gift-box-base">
+              <span class="gift-lid-animated">🎁</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- BARRA DE PROGRESO -->
+        <div class="flex space-x-1 my-3">
+          <div class="h-2 bg-slate-900 rounded-full flex-1"></div>
+          <div class="h-2 bg-slate-900 rounded-full flex-1"></div>
+          <div class="h-2 bg-slate-900/20 rounded-full flex-1"></div>
+          <div class="h-2 bg-slate-900/20 rounded-full flex-1"></div>
+        </div>
+
+        <!-- ESTADO DEL REPARTIDOR -->
+        <div class="flex justify-between items-center mt-2">
+          <h2 class="text-lg font-extrabold text-gray-900 leading-tight">
+            Sé paciente en breve nos encontraremos
+          </h2>
+          <span class="text-gray-400 text-sm pl-2">⌄</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BLOQUE INFERIOR INTERACTIVO -->
+    <div id="bottom-sheet" class="pointer-events-auto bg-white rounded-t-3xl shadow-2xl p-4 border-t border-gray-100 space-y-3 -mb-3 sheet-transition overflow-hidden">
+      
+      <!-- PULL BAR CLICKABLE PARA DESPLEGAR/COLAPSAR -->
+      <div class="cursor-pointer flex flex-col items-center -mt-1 mb-1" onclick="toggleSheet()">
+        <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+        <span id="chevron-icon" class="text-gray-400 text-xs transition-transform duration-300 transform rotate-180 mt-1">▲</span>
+      </div>
+
+      <!-- PESTAÑAS DE NAVEGACIÓN -->
+      <div class="bg-gray-100 p-1 rounded-full flex text-xs font-bold text-center">
+        <button id="tab-detalle" onclick="switchTab('detalle')" class="flex-1 bg-slate-950 text-white py-2 rounded-full shadow transition-all">Detalle del regalo</button>
+        <button id="tab-mensaje" onclick="switchTab('mensaje')" class="flex-1 text-gray-500 py-2 rounded-full transition-all">Mensaje especial</button>
+      </div>
+
+      <!-- VISTA 1: DETALLE DEL REGALO -->
+      <div id="view-detalle" class="space-y-3 text-xs text-gray-600 pt-1">
+        
+        <!-- BANNER CON "ENVÍO" -->
+        <div class="bg-amber-500 rounded-2xl p-3 text-white flex items-center justify-between shadow-sm">
+          <div>
+            <p class="text-xs font-bold opacity-90">Envío</p>
+            <h4 class="text-sm font-black">Montevideo ➔ Sevilla</h4>
+          </div>
+          <span class="text-2xl">✈️</span>
+        </div>
+
+        <div class="flex items-start justify-between border-t border-gray-100 pt-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-base">🎁</span>
+            <div>
+              <p class="font-bold text-gray-800 text-sm">Sorpresa Internacional</p>
+              <p class="text-gray-400">1 regalo especial</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-100 pt-3 flex items-start space-x-3">
+          <span class="text-base">📍</span>
+          <div>
+            <p class="font-bold text-gray-800">Lo recibes en</p>
+            <p class="text-gray-500">Plaza de Armas, Sevilla, España</p>
+          </div>
+        </div>
+
+        <!-- REPARTIDOR CON BOTÓN A WHATSAPP -->
+        <div class="border-t border-gray-100 pt-3 flex items-center justify-between">
+          <div class="flex items-start space-x-3">
+            <span class="text-base">🛵</span>
+            <div>
+              <p class="font-bold text-gray-800">Entrega a cargo de</p>
+              <p class="text-gray-500">Juankarlos</p>
+            </div>
+          </div>
+          
+          <a href="https://wa.me/59897334077" target="_blank" rel="noopener noreferrer" class="bg-emerald-500 hover:bg-emerald-600 text-white p-2.5 rounded-full shadow-md flex items-center justify-center transition-all">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+            </svg>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- VISTA 2: MENSAJE ESPECIAL -->
+      <div id="view-mensaje" class="hidden space-y-3 text-xs pt-1">
+        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-gray-800 space-y-2">
+          <div class="flex items-center space-x-2 text-rose-500 font-bold">
+            <span class="text-base">🎂</span>
+            <span>Mensaje para vos:</span>
+          </div>
+          <p class="italic text-gray-600 text-xs leading-relaxed">
+            Feliz cumpleaños. <br> No importa la distancia, este regalo va cargado con todo mi cariño. Nos vemos muy pronto
+          </p>
+        </div>
+
+        <a href="https://wa.me/59897334077" target="_blank" rel="noopener noreferrer" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-bold text-center block shadow transition-all">
+          Responder a Juankarlos 💬
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SCRIPT DEL MAPA Y CONTROL DE INTERACCIONES -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // CERRAR VENTANA O SIMULAR CIERRE DE INTERFAZ
+    function closeWindow() {
+      window.close();
+      
+      const mainUI = document.getElementById('main-interface');
+      if (mainUI) {
+        mainUI.style.opacity = '0';
+        setTimeout(() => {
+          mainUI.style.display = 'none';
+        }, 300);
+      }
+    }
+
+    // COPIAR LINK AL PORTAPAPELES
+    function copyLink() {
+      const urlToCopy = "aquí va la url destino";
+
+      navigator.clipboard.writeText(urlToCopy).then(() => {
+        showToast();
+      }).catch(err => {
+        const tempInput = document.createElement("input");
+        tempInput.value = urlToCopy;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        showToast();
+      });
+    }
+
+    // MOSTRAR TOAST DE CONFIRMACIÓN
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+
+    // Cambio entre pestañas
+    function switchTab(tab) {
+      const viewDetalle = document.getElementById('view-detalle');
+      const viewMensaje = document.getElementById('view-mensaje');
+      const tabDetalle = document.getElementById('tab-detalle');
+      const tabMensaje = document.getElementById('tab-mensaje');
+
+      if (tab === 'detalle') {
+        viewDetalle.classList.remove('hidden');
+        viewMensaje.classList.add('hidden');
+        
+        tabDetalle.className = "flex-1 bg-slate-950 text-white py-2 rounded-full shadow transition-all";
+        tabMensaje.className = "flex-1 text-gray-500 py-2 rounded-full transition-all";
+      } else {
+        viewDetalle.classList.add('hidden');
+        viewMensaje.classList.remove('hidden');
+
+        tabMensaje.className = "flex-1 bg-slate-950 text-white py-2 rounded-full shadow transition-all";
+        tabDetalle.className = "flex-1 text-gray-500 py-2 rounded-full transition-all";
+      }
+    }
+
+    // Colapsar / Desplegar panel
+    let isExpanded = true;
+    function toggleSheet() {
+      const viewDetalle = document.getElementById('view-detalle');
+      const viewMensaje = document.getElementById('view-mensaje');
+      const chevron = document.getElementById('chevron-icon');
+
+      if (isExpanded) {
+        viewDetalle.classList.add('hidden');
+        viewMensaje.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+      } else {
+        switchTab('detalle');
+        chevron.style.transform = 'rotate(180deg)';
+      }
+      isExpanded = !isExpanded;
+    }
+
+    // COORDENADAS EXACTAS
+    const originCoords = [-34.8856, -56.1952]; // Caracas 1288, Montevideo
+    const destCoords = [37.3919, -6.0038];    // Plaza de Armas, Sevilla
+
+    const map = L.map('map', { zoomControl: false });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: ''
+    }).addTo(map);
+
+    const pinOrigen = L.divIcon({
+      className: '',
+      html: '<div class="map-pin">🛵</div>',
+      iconSize: [42, 42],
+      iconAnchor: [21, 21]
+    });
+
+    const pinDestino = L.divIcon({
+      className: '',
+      html: '<div class="map-pin">❤️</div>',
+      iconSize: [42, 42],
+      iconAnchor: [21, 21]
+    });
+
+    L.marker(originCoords, { icon: pinOrigen }).addTo(map);
+    L.marker(destCoords, { icon: pinDestino }).addTo(map);
+
+    // LÍNEA ANIMADA MEDIANTE CLASE CSS Y SVG
+    const ruta = L.polyline([originCoords, destCoords], {
+      color: '#ef4444',
+      weight: 4,
+      className: 'animated-route-line'
+    }).addTo(map);
+
+    map.fitBounds(ruta.getBounds(), { padding: [60, 60] });
+  </script>
+</body>
+</html>
