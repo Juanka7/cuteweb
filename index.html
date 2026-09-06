@@ -27,7 +27,7 @@
 
     /* Transición para colapsar/desplegar */
     .sheet-transition {
-      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease;
     }
 
     /* ANIMACIÓN DEL REGALO Y CORAZONES */
@@ -199,11 +199,11 @@
 
     </div>
 
-    <!-- BLOQUE INFERIOR INTERACTIVO -->
-    <div id="bottom-sheet" class="pointer-events-auto bg-white rounded-t-3xl shadow-2xl p-4 border-t border-gray-100 space-y-3 -mb-3 sheet-transition overflow-hidden">
+    <!-- BLOQUE INFERIOR INTERACTIVO (CON SCROLL INTERNO Y ALTURA MÁXIMA) -->
+    <div id="bottom-sheet" class="pointer-events-auto bg-white rounded-t-3xl shadow-2xl p-4 border-t border-gray-100 space-y-3 -mb-3 sheet-transition max-h-[75vh] overflow-y-auto">
       
       <!-- PULL BAR CLICKABLE PARA DESPLEGAR/COLAPSAR -->
-      <div class="cursor-pointer flex flex-col items-center -mt-1 mb-1" onclick="toggleSheet()">
+      <div class="cursor-pointer flex flex-col items-center -mt-1 mb-1 sticky top-0 bg-white pt-1 pb-2 z-10" onclick="toggleSheet()">
         <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
         <span id="chevron-icon" class="text-gray-400 text-xs transition-transform duration-300 transform rotate-180 mt-1">▲</span>
       </div>
@@ -215,7 +215,7 @@
       </div>
 
       <!-- VISTA 1: DETALLE DEL REGALO -->
-      <div id="view-detalle" class="space-y-3 text-xs text-gray-600 pt-1">
+      <div id="view-detalle" class="space-y-3 text-xs text-gray-600 pt-1 pb-4">
         
         <!-- BANNER CON "ENVÍO" -->
         <div class="bg-amber-500 rounded-2xl p-3 text-white flex items-center justify-between shadow-sm">
@@ -245,7 +245,7 @@
         </div>
 
         <!-- REPARTIDOR CON BOTÓN A WHATSAPP -->
-        <div class="border-t border-gray-100 pt-3 flex items-center justify-between">
+        <div class="border-t border-gray-100 pt-3 flex items-center justify-between pb-2">
           <div class="flex items-start space-x-3">
             <span class="text-base">🛵</span>
             <div>
@@ -264,7 +264,7 @@
       </div>
 
       <!-- VISTA 2: MENSAJE ESPECIAL -->
-      <div id="view-mensaje" class="hidden space-y-3 text-xs pt-1">
+      <div id="view-mensaje" class="hidden space-y-3 text-xs pt-1 pb-4">
         <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-gray-800 space-y-2">
           <div class="flex items-center space-x-2 text-rose-500 font-bold">
             <span class="text-base">🎂</span>
@@ -302,7 +302,7 @@
 
     // COPIAR LINK AL PORTAPAPELES
     function copyLink() {
-      const urlToCopy = "aquí va la url destino";
+      const urlToCopy = window.location.href;
 
       navigator.clipboard.writeText(urlToCopy).then(() => {
         showToast();
