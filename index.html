@@ -188,10 +188,10 @@
           <div class="h-2 bg-slate-900/20 rounded-full flex-1"></div>
         </div>
 
-        <!-- ESTADO DEL REPARTIDOR -->
+        <!-- ESTADO DEL VUELO / REPARTIDOR -->
         <div class="flex justify-between items-center mt-2">
           <h2 class="text-lg font-extrabold text-gray-900 leading-tight">
-            Sé paciente en breve nos encontraremos
+            Latam está preparando su vuelo
           </h2>
           <span class="text-gray-400 text-sm pl-2">⌄</span>
         </div>
@@ -199,7 +199,7 @@
 
     </div>
 
-    <!-- BLOQUE INFERIOR INTERACTIVO CON MAXIMA ALTURA HABILITADA -->
+    <!-- BLOQUE INFERIOR INTERACTIVO -->
     <div id="bottom-sheet" class="pointer-events-auto bg-white rounded-t-3xl shadow-2xl p-4 border-t border-gray-100 flex flex-col -mb-3 sheet-transition max-h-[80vh]">
       
       <!-- PULL BAR CLICKABLE -->
@@ -208,7 +208,7 @@
         <span id="chevron-icon" class="text-gray-400 text-xs transition-transform duration-300 transform rotate-180 mt-1">▲</span>
       </div>
 
-      <!-- PESTAÑAS DE NAVEGACIÓN (FIJAS ARRIBA) -->
+      <!-- PESTAÑAS DE NAVEGACIÓN -->
       <div class="bg-gray-100 p-1 rounded-full flex text-xs font-bold text-center shrink-0 mb-3">
         <button id="tab-detalle" onclick="switchTab('detalle')" class="flex-1 bg-slate-950 text-white py-2 rounded-full shadow transition-all">Detalle del regalo</button>
         <button id="tab-mensaje" onclick="switchTab('mensaje')" class="flex-1 text-gray-500 py-2 rounded-full transition-all">Mensaje especial</button>
@@ -267,8 +267,8 @@
 
         </div>
 
-        <!-- VISTA 2: MENSAJE ESPECIAL -->
-        <div id="view-mensaje" class="hidden space-y-3 text-xs pt-1 pb-6">
+        <!-- VISTA 2: MENSAJE ESPECIAL (CON 15VH ADICIONALES) -->
+        <div id="view-mensaje" class="hidden space-y-3 text-xs pt-1 pb-6 min-h-[calc(100%+15vh)] flex flex-col justify-between">
           <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-gray-800 space-y-2">
             <div class="flex items-center space-x-2 text-rose-500 font-bold">
               <span class="text-base">🎂</span>
@@ -278,6 +278,9 @@
               Feliz cumpleaños. <br> No importa la distancia, este regalo va cargado con todo mi cariño. Nos vemos muy pronto
             </p>
           </div>
+
+          <!-- ESPACIO ADICIONAL DE 15VH EXCLUSIVO DE ESTA VISTA -->
+          <div class="h-[15vh]"></div>
 
           <a href="https://wa.me/59897334077" target="_blank" rel="noopener noreferrer" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-bold text-center block shadow transition-all">
             Responder a Juankarlos 💬
