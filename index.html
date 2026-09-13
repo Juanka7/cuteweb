@@ -27,7 +27,7 @@
 
     /* Transición suave para la hoja inferior */
     .sheet-transition {
-      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Scroll suave habilitado para móviles */
@@ -204,23 +204,23 @@
 
     </div>
 
-    <!-- BLOQUE INFERIOR INTERACTIVO CON SCROLL CORREGIDO -->
-    <div id="bottom-sheet" class="pointer-events-auto bg-white rounded-t-3xl shadow-2xl px-4 pt-2 pb-6 border-t border-gray-100 sheet-transition max-h-[55vh] flex flex-col -mb-3">
+    <!-- BLOQUE INFERIOR INTERACTIVO -->
+    <div id="bottom-sheet" class="pointer-events-auto bg-white rounded-t-3xl shadow-2xl px-4 pt-2 pb-4 border-t border-gray-100 sheet-transition max-h-[55vh] flex flex-col overflow-hidden">
       
       <!-- PULL BAR CLICKABLE PARA DESPLEGAR/COLAPSAR -->
-      <div class="cursor-pointer flex flex-col items-center py-1 flex-shrink-0" onclick="toggleSheet()">
-        <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+      <div class="cursor-pointer flex flex-col items-center py-2 flex-shrink-0 w-full" onclick="toggleSheet()">
+        <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
         <span id="chevron-icon" class="text-gray-400 text-xs transition-transform duration-300 transform rotate-180 mt-1">▲</span>
       </div>
 
       <!-- PESTAÑAS DE NAVEGACIÓN -->
-      <div class="bg-gray-100 p-1 rounded-full flex text-xs font-bold text-center flex-shrink-0 my-2">
+      <div class="bg-gray-100 p-1 rounded-full flex text-xs font-bold text-center flex-shrink-0 mb-2">
         <button id="tab-detalle" onclick="switchTab('detalle')" class="flex-1 bg-slate-950 text-white py-2 rounded-full shadow transition-all">Detalle del regalo</button>
         <button id="tab-mensaje" onclick="switchTab('mensaje')" class="flex-1 text-gray-500 py-2 rounded-full transition-all">Mensaje especial</button>
       </div>
 
       <!-- CONTENEDOR CON SCROLL INTERNO -->
-      <div class="overflow-y-auto scroll-touch flex-1 pr-1">
+      <div id="sheet-content" class="overflow-y-auto scroll-touch flex-1 pr-1">
         
         <!-- VISTA 1: DETALLE DEL REGALO -->
         <div id="view-detalle" class="space-y-3 text-xs text-gray-600 pt-1 pb-4">
@@ -297,10 +297,8 @@
   <!-- SCRIPT DEL MAPA Y CONTROL DE INTERACCIONES -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // CERRAR VENTANA O SIMULAR CIERRE DE INTERFAZ
     function closeWindow() {
       window.close();
-      
       const mainUI = document.getElementById('main-interface');
       if (mainUI) {
         mainUI.style.opacity = '0';
@@ -310,7 +308,6 @@
       }
     }
 
-    // COPIAR LINK AL PORTAPAPELES
     function copyLink() {
       const urlToCopy = window.location.href;
 
@@ -327,7 +324,6 @@
       });
     }
 
-    // MOSTRAR TOAST DE CONFIRMACIÓN
     function showToast() {
       const toast = document.getElementById('toast');
       toast.classList.remove('opacity-0');
@@ -339,7 +335,6 @@
       }, 2500);
     }
 
-    // Cambio entre pestañas
     function switchTab(tab) {
       const viewDetalle = document.getElementById('view-detalle');
       const viewMensaje = document.getElementById('view-mensaje');
@@ -361,32 +356,27 @@
       }
     }
 
-    // Colapsar / Desplegar panel
+    // Colapsar / Desplegar panel correctamente
     let isExpanded = true;
     function toggleSheet() {
-      const viewDetalle = document.getElementById('view-detalle');
-      const viewMensaje = document.getElementById('view-mensaje');
+      const sheetContent = document.getElementById('sheet-content');
       const chevron = document.getElementById('chevron-icon');
       const bottomSheet = document.getElementById('bottom-sheet');
 
       if (isExpanded) {
-        viewDetalle.classList.add('hidden');
-        viewMensaje.classList.add('hidden');
-        bottomSheet.classList.remove('max-h-[55vh]');
-        bottomSheet.classList.add('max-h-[60px]');
+        sheetContent.classList.add('hidden');
+        bottomSheet.style.maxHeight = '95px';
         chevron.style.transform = 'rotate(0deg)';
       } else {
-        switchTab('detalle');
-        bottomSheet.classList.remove('max-h-[60px]');
-        bottomSheet.classList.add('max-h-[55vh]');
+        sheetContent.classList.remove('hidden');
+        bottomSheet.style.maxHeight = '55vh';
         chevron.style.transform = 'rotate(180deg)';
       }
       isExpanded = !isExpanded;
     }
 
-    // COORDENADAS EXACTAS
-    const originCoords = [-34.8856, -56.1952]; // Caracas 1288, Montevideo
-    const destCoords = [37.3919, -6.0038];    // Plaza de Armas, Sevilla
+    const originCoords = [-34.8856, -56.1952];
+    const destCoords = [37.3919, -6.0038];
 
     const map = L.map('map', { zoomControl: false });
 
@@ -412,7 +402,6 @@
     L.marker(originCoords, { icon: pinOrigen }).addTo(map);
     L.marker(destCoords, { icon: pinDestino }).addTo(map);
 
-    // LÍNEA ANIMADA MEDIANTE CLASE CSS Y SVG
     const ruta = L.polyline([originCoords, destCoords], {
       color: '#ef4444',
       weight: 4,
